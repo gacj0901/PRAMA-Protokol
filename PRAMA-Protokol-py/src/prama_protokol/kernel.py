@@ -6,7 +6,7 @@ Universal aptadynamic projection:  Ω → Γ(t) = (Δ, Ξ, λ, Θ, M, G).
     Ξ(t)  = ∫ K(t−τ) Δ(τ) dτ                 non-Markovian tension accumulator,
                                               exponential causal kernel (P2)
     λ(t)  = historical permissivity: eroded by excess (Ξ−Θ)⁺, bounded
-            recovery that NEVER modifies Ξ (P3, P4 — non-reincarnation)
+            recovery that NEVER modifies Ξ (P3, P4 — non-restitution)
     Θ(λ)  = endogenous threshold, strictly increasing in λ (P3)
     M(t)  = Θ(λ) − Ξ                          viability margin
     G(t)  = D⁺M (smoothed)                    margin generation power
