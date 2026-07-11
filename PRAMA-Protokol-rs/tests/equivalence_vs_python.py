@@ -1,7 +1,7 @@
 """Re-runnable Rust<->Python equivalence certification.
 Requires: pip install prama-protokol ; cargo build --release
 Run from crate root: python tests/equivalence_vs_python.py"""
-import subprocess, io
+import subprocess, io, os
 import numpy as np, pandas as pd
 from prama_protokol import KernelConfig, project
 
@@ -13,7 +13,8 @@ for n, tau, gs, nan_frac in [(10_000,336.0,24,0.02),(10_000,64.0,16,0.0),(50_000
     gp = project(om, ex, KernelConfig(tau_memory=tau, g_smooth=gs))
     csv_in = "omega,expected\n"+"\n".join(
         f"{o:.17e},{'nan' if np.isnan(e) else format(e,'.17e')}" for o,e in zip(om,ex))
-    r = subprocess.run(["./target/release/prama-project","--tau",str(tau),"--gsmooth",str(gs)],
+    exe = "./target/release/prama-project.exe" if os.name == "nt" else "./target/release/prama-project"
+    r = subprocess.run([exe,"--tau",str(tau),"--gsmooth",str(gs)],
                        input=csv_in, capture_output=True, text=True, check=True)
     gr = pd.read_csv(io.StringIO(r.stdout))
     worst = max(float(np.max(np.abs(gp[c].to_numpy()-gr[c].to_numpy())))

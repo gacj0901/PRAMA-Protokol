@@ -1,6 +1,6 @@
 [package]
 name = "prama-protokol-rs"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "PRAMA Protokol — Rust production core of the universal aptadynamic projection kernel (AS-1). Equivalence-certified against the validated Python reference."
 license = "AGPL-3.0-only"

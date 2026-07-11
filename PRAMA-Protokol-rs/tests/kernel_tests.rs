@@ -7,7 +7,10 @@ fn p4_recovery_never_modifies_xi() {
     let mut omega = vec![8.0; 200];
     omega.extend(vec![1.0; n - 200]);
     let expected = vec![1.0; n];
-    let cfg = KernelConfig { tau_memory: 30.0, ..Default::default() };
+    let cfg = KernelConfig {
+        tau_memory: 30.0,
+        ..Default::default()
+    };
     let g = project(&omega, &expected, &cfg, None);
     let a = (-1.0f64 / 30.0).exp();
     let start = 205;
@@ -29,13 +32,17 @@ fn stratification_quadrants() {
 }
 
 #[test]
-fn streaming_matches_batch_on_state_coordinates() {
-    // step() must reproduce batch xi/lambda/theta/M exactly; G differs by
-    // design (backward difference vs central) and is excluded here.
+fn streaming_matches_batch_completely() {
     let n = 5000;
     let omega: Vec<f64> = (0..n).map(|i| 1.0 + ((i % 31) as f64) * 0.07).collect();
     let expected: Vec<f64> = (0..n)
-        .map(|i| if i < 50 { f64::NAN } else { 2.0 + ((i % 7) as f64) * 0.01 })
+        .map(|i| {
+            if i < 50 {
+                f64::NAN
+            } else {
+                2.0 + ((i % 7) as f64) * 0.01
+            }
+        })
         .collect();
     let cfg = KernelConfig::default();
     let batch = project(&omega, &expected, &cfg, None);
@@ -43,9 +50,54 @@ fn streaming_matches_batch_on_state_coordinates() {
     for i in 0..n {
         let s = k.step(omega[i], expected[i], None);
         assert!((s.xi - batch.xi[i]).abs() < 1e-15, "xi at {}", i);
-        assert!((s.lambda - batch.lambda[i]).abs() < 1e-15, "lambda at {}", i);
+        assert!(
+            (s.lambda - batch.lambda[i]).abs() < 1e-15,
+            "lambda at {}",
+            i
+        );
         assert!((s.theta - batch.theta[i]).abs() < 1e-15, "theta at {}", i);
         assert!((s.m - batch.m[i]).abs() < 1e-15, "M at {}", i);
+        assert!((s.g - batch.g[i]).abs() < 1e-15, "G at {}", i);
+        assert_eq!(
+            s.latent_collapse, batch.latent_collapse[i],
+            "latent at {}",
+            i
+        );
+        assert_eq!(s.stratum, batch.stratum[i], "stratum at {}", i);
         assert_eq!(s.valid, batch.valid[i], "valid at {}", i);
+    }
+}
+
+#[test]
+fn prefix_causality_and_edges() {
+    for &window in &[1usize, 64] {
+        let cfg = KernelConfig {
+            g_smooth: window,
+            ..Default::default()
+        };
+        assert!(project(&[], &[], &cfg, None).g.is_empty());
+        let one = project(&[1.0], &[f64::NAN], &cfg, None);
+        assert_eq!(one.g, vec![0.0]);
+        assert_eq!(one.valid, vec![false]);
+
+        let omega = vec![1.0, 3.0, 0.5, 5.0, 1.0];
+        let expected = vec![f64::NAN, f64::NAN, 2.0, 1.0, 2.0];
+        let a = project(&omega, &expected, &cfg, None);
+        let mut changed_o = omega.clone();
+        let mut changed_e = expected.clone();
+        changed_o[4] = 999.0;
+        changed_e[4] = 0.01;
+        let b = project(&changed_o, &changed_e, &cfg, None);
+        for i in 0..4 {
+            assert_eq!(a.delta[i], b.delta[i]);
+            assert_eq!(a.xi[i], b.xi[i]);
+            assert_eq!(a.lambda[i], b.lambda[i]);
+            assert_eq!(a.theta[i], b.theta[i]);
+            assert_eq!(a.m[i], b.m[i]);
+            assert_eq!(a.g[i], b.g[i]);
+            assert_eq!(a.latent_collapse[i], b.latent_collapse[i]);
+            assert_eq!(a.stratum[i], b.stratum[i]);
+            assert_eq!(a.valid[i], b.valid[i]);
+        }
     }
 }

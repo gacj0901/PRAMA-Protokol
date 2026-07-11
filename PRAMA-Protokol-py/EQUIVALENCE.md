@@ -1,6 +1,6 @@
 # Equivalence Certification
 
-**Package:** `prama-protokol` v0.1.0
+**Package:** `prama-protokol` v0.2.0
 **Reference:** `Aptadynamic-Electrical-Grid` (the BPA/NYISO-validated implementation)
 **Date:** 2026-07-04
 

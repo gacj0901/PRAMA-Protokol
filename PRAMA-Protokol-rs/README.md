@@ -33,10 +33,9 @@ interface — never as code to fork.
 and replays.
 
 **Streaming** (`Kernel::step`) — O(1) per bin, constant memory; for production
-monitors. State coordinates (Ξ, λ, Θ, M) match batch to 1e-15 (unit-tested).
-Declared divergence: the streaming margin-generation estimator `g` is a backward
-difference (a live monitor cannot see the future bin), while batch `G` uses
-central differences; any study must declare which estimator it uses.
+monitors. All outputs match batch to near machine epsilon (unit-tested). Both
+paths use a trailing/right-aligned mean followed by `G[0] = 0` and
+`G[t] = smooth_M[t] - smooth_M[t-1]`.
 
 ```rust
 use prama_protokol::{Kernel, KernelConfig};
@@ -83,7 +82,7 @@ cargo build --release
 
 ## Roadmap
 
-1. ~~Core + streaming + CLI + cross-language certification~~ — **done** (v0.1.0).
+1. ~~Core + streaming + CLI + cross-language certification~~ — **done** (v0.2.0).
 2. Python bindings (PyO3/maturin) so studies iterate in Python on the compiled core.
 3. First production domain deployment (candidate: water & drainage networks —
    see the domain blueprint in the program's planning documents).

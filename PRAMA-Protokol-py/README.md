@@ -109,7 +109,7 @@ The NYISO episode is part of the public record by design: it demonstrates that t
 
 ### Roadmap
 
-1. ~~**Kernel extraction**~~ — **done** (v0.1.0): π is an installable package with no domain reference; bit-identical equivalence certified ([`EQUIVALENCE.md`](EQUIVALENCE.md)).
+1. ~~**Kernel extraction**~~ — **done** (v0.2.0): π is installable, strictly causal, and batch/streaming equivalent ([`EQUIVALENCE.md`](EQUIVALENCE.md)).
 2. ~~**Compliance Module**~~ — **done** (v0.1.0): executable C2/C3/C4 checks with self-tests that detect future-leaking expectations and degenerate Δ.
 3. ~~**Observation Interface base**~~ — **done** (v0.1.0): the C1–C5 contract as an abstract base class plus a universal causal expectation builder.
 4. **Migrate the reference implementation** — make `Aptadynamic-Electrical-Grid` depend on this package, removing its embedded copy of the kernel.

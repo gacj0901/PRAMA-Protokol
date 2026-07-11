@@ -3,7 +3,7 @@
 //! Universal aptadynamic projection:  Ω → Γ(t) = (Δ, Ξ, λ, Θ, M, G).
 //!
 //! This is an **operation-for-operation replica** of the certified Python
-//! kernel (`prama-protokol` v0.1.0), which is itself bit-identical to the
+//! kernel (`prama-protokol` v0.2.0), with unified causal batch/streaming G.
 //! code that produced the BPA/NYISO empirical validation. Every arithmetic
 //! step follows the same order as the reference so that results agree to
 //! near machine precision (see EQUIVALENCE-RS.md; the only tolerated
@@ -93,11 +93,11 @@ pub fn project(
         theta[i] = cfg.theta_scale * lam[i];
     }
 
-    // M and its smoothed gradient — replicating pandas rolling(min_periods=1).mean()
-    // then numpy.gradient (central differences; one-sided at the edges)
+    // Trailing/right-aligned rolling mean, then the normative causal difference:
+    // G[0] = 0; G[t] = smooth_M[t] - smooth_M[t-1].
     let m: Vec<f64> = (0..n).map(|i| theta[i] - xi[i]).collect();
     let sm = rolling_mean_min1(&m, cfg.g_smooth);
-    let g = np_gradient(&sm);
+    let g = backward_difference(&sm);
 
     let mut latent = vec![false; n];
     let mut stratum = vec![1u8; n];
@@ -107,10 +107,24 @@ pub fn project(
             None => omega[i] > 0.0,
         };
         latent[i] = sop && m[i] >= 0.0 && g[i] < 0.0 && valid[i];
-        stratum[i] = if valid[i] { stratify_one(m[i], g[i]) } else { 1 };
+        stratum[i] = if valid[i] {
+            stratify_one(m[i], g[i])
+        } else {
+            1
+        };
     }
 
-    Gamma { delta, xi, lambda: lam, theta, m, g, latent_collapse: latent, stratum, valid }
+    Gamma {
+        delta,
+        xi,
+        lambda: lam,
+        theta,
+        m,
+        g,
+        latent_collapse: latent,
+        stratum,
+        valid,
+    }
 }
 
 /// Regime stratification S₁–S₄ on the (M, G) plane (AS-1 §6).
@@ -144,24 +158,19 @@ fn rolling_mean_min1(x: &[f64], window: usize) -> Vec<f64> {
     out
 }
 
-/// numpy.gradient replica for 1-D unit spacing.
-fn np_gradient(x: &[f64]) -> Vec<f64> {
+/// Strictly causal one-step backward difference.
+fn backward_difference(x: &[f64]) -> Vec<f64> {
     let n = x.len();
     let mut out = vec![0.0f64; n];
-    if n == 1 {
-        return out;
-    }
-    out[0] = x[1] - x[0];
-    out[n - 1] = x[n - 1] - x[n - 2];
-    for i in 1..n - 1 {
-        out[i] = (x[i + 1] - x[i - 1]) / 2.0;
+    for i in 1..n {
+        out[i] = x[i] - x[i - 1];
     }
     out
 }
 
 /// O(1) streaming state for always-on production monitors.
-/// Feed one (omega, expected) pair per bin; latent/stratum need G, which is
-/// produced with a `g_smooth`-bin delay by the internal smoother.
+/// Feed one pair per bin. Smoothing is trailing/right-aligned and G is a
+/// causal one-step backward difference; there is no full-window delay.
 pub struct Kernel {
     cfg: KernelConfig,
     a: f64,
@@ -213,7 +222,11 @@ impl Kernel {
 
     pub fn step(&mut self, omega: f64, expected: f64, sigma_op: Option<bool>) -> StepOut {
         let valid = !expected.is_nan();
-        let delta = if valid { (omega - expected).abs() / (expected + 1.0) } else { 0.0 };
+        let delta = if valid {
+            (omega - expected).abs() / (expected + 1.0)
+        } else {
+            0.0
+        };
 
         let (xi, lam, theta);
         if !self.started {
@@ -225,8 +238,8 @@ impl Kernel {
         } else {
             xi = self.a * self.xi + (1.0 - self.a) * delta;
             let excess = (xi - self.theta_prev).max(0.0);
-            let d_lam =
-                -self.cfg.kappa * excess + self.cfg.lambda_recovery * (self.cfg.lambda_eq - self.lam);
+            let d_lam = -self.cfg.kappa * excess
+                + self.cfg.lambda_recovery * (self.cfg.lambda_eq - self.lam);
             lam = (self.lam + d_lam).clamp(self.cfg.lambda_min, self.cfg.lambda_eq);
             theta = self.cfg.theta_scale * lam;
         }

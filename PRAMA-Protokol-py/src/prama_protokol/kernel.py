@@ -85,6 +85,8 @@ def project(
     exp_ = np.asarray(expected, dtype=float)
     if obs.shape != exp_.shape:
         raise ValueError("omega and expected must have the same shape")
+    if obs.size == 0:
+        raise ValueError("omega and expected must be non-empty")
 
     valid = ~np.isnan(exp_)
     delta = np.zeros(len(obs))
@@ -111,9 +113,11 @@ def project(
         theta[i] = cfg.theta_scale * lam[i]
 
     m = theta - xi
-    g = np.gradient(
-        pd.Series(m).rolling(cfg.g_smooth, min_periods=1).mean().to_numpy()
-    )
+    smoothed_margin = pd.Series(m).rolling(
+        cfg.g_smooth, min_periods=1
+    ).mean().to_numpy()
+    # Strictly causal: G[0] = 0; G[t] = smooth_M[t] - smooth_M[t-1].
+    g = np.diff(smoothed_margin, prepend=smoothed_margin[0])
 
     if sigma_op is None:
         sigma_op = obs > 0

@@ -157,3 +157,34 @@ def test_compliance_detects_degenerate_delta():
     result = compliance.check_degeneration(g["delta"].to_numpy(), omega)
     assert not result["passed"]
     assert result["r_delta_omega"] > 0.9
+
+
+def test_prefix_causality_all_outputs():
+    rng = np.random.default_rng(42)
+    omega = rng.gamma(2, 1, 80)
+    expected = rng.gamma(2, 1, 80)
+    expected[:12] = np.nan
+    cfg = KernelConfig(g_smooth=9)
+    reference = project(omega, expected, cfg)
+    for k in (0, 1, 11, 12, 37, 78):
+        changed_o, changed_e = omega.copy(), expected.copy()
+        changed_o[k + 1:] = rng.normal(100, 50, len(omega) - k - 1)
+        changed_e[k + 1:] = rng.normal(10, 3, len(omega) - k - 1)
+        changed = project(changed_o, changed_e, cfg)
+        for col in ("delta", "xi", "lambda", "theta", "M", "G",
+                    "latent_collapse", "stratum", "valid"):
+            assert np.array_equal(reference[col].to_numpy()[:k + 1],
+                                  changed[col].to_numpy()[:k + 1])
+
+
+def test_causal_g_and_edge_cases():
+    with np.testing.assert_raises_regex(ValueError, "non-empty"):
+        project(np.array([]), np.array([]))
+    for window in (1, 20):
+        one = project(np.array([1.0]), np.array([np.nan]), KernelConfig(g_smooth=window))
+        assert one.loc[0, "G"] == 0.0
+        assert not one.loc[0, "valid"]
+        omega = np.array([1., 4., 1., 4., 1.])
+        out = project(omega, np.ones(5), KernelConfig(g_smooth=window))
+        sm = out["M"].rolling(window, min_periods=1).mean().to_numpy()
+        assert np.array_equal(out["G"].to_numpy(), np.diff(sm, prepend=sm[0]))

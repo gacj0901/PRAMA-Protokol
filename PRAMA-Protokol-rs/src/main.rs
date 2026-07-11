@@ -27,8 +27,13 @@ fn main() {
         let t0 = std::time::Instant::now();
         let g = project(&omega, &expected, &cfg, None);
         let dt = t0.elapsed().as_secs_f64();
-        eprintln!("bench: {} bins in {:.3}s ({:.1} M bins/s)  [checksum xi_last={:.6}]",
-                  n, dt, n as f64 / dt / 1e6, g.xi[n - 1]);
+        eprintln!(
+            "bench: {} bins in {:.3}s ({:.1} M bins/s)  [checksum xi_last={:.6}]",
+            n,
+            dt,
+            n as f64 / dt / 1e6,
+            g.xi[n - 1]
+        );
         return;
     }
 
@@ -60,8 +65,15 @@ fn main() {
         writeln!(
             w,
             "{:.17e},{:.17e},{:.17e},{:.17e},{:.17e},{:.17e},{},{},{}",
-            g.delta[i], g.xi[i], g.lambda[i], g.theta[i], g.m[i], g.g[i],
-            g.latent_collapse[i] as u8, g.stratum[i], g.valid[i] as u8
+            g.delta[i],
+            g.xi[i],
+            g.lambda[i],
+            g.theta[i],
+            g.m[i],
+            g.g[i],
+            g.latent_collapse[i] as u8,
+            g.stratum[i],
+            g.valid[i] as u8
         )
         .unwrap();
     }
