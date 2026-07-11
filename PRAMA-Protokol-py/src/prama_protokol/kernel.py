@@ -63,7 +63,7 @@ def project(
     Parameters
     ----------
     omega : array of shape (n,)
-        The dimensionless, normalized observable stream ω(t) (AS-1 C1, C4).
+        The dimensionless, normalized observable stream ω(t) (C1, N1).
     expected : array of shape (n,)
         The strictly causal expectation ω̂(t) = E[ω(t) | past only] (C2).
         Positions where no causal expectation exists yet (warm-up) are NaN;

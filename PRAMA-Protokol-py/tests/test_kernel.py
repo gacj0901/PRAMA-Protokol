@@ -120,7 +120,7 @@ def test_compliance_record_passes_on_conformant_interface():
     raw = rng.gamma(2.0, 100.0, 4000)  # dimensional raw measurements
 
     def normalize(x):
-        # explicit causal normalization: divide by causal running mean (C4)
+        # explicit causal normalization: divide by causal running mean (N1)
         cm = np.cumsum(x) / (np.arange(len(x)) + 1)
         return x / np.maximum(cm, 1e-12)
 
@@ -130,7 +130,7 @@ def test_compliance_record_passes_on_conformant_interface():
 
     record = compliance.run_all(raw, normalize, expectation)
     assert record["C2"]["passed"], record["C2"]["detail"]
-    assert record["C4"]["passed"], record["C4"]["detail"]
+    assert record["N1"]["passed"], record["N1"]["detail"]
     assert record["all_passed"] or not record["C3"]["passed"]  # C3 depends on data
 
 

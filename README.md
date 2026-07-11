@@ -81,7 +81,7 @@ Writing a domain implementation means writing **one component**: an Observation 
 - **C1 Strict observability** — only externally observable events; no hidden state.
 - **C2 Strict causality** — expectations built from the strict past only.
 - **C3 Genuine decoupling** — Δ measures deviation from the system's own causally expected behavior, never raw activity.
-- **C4 Scale invariance** — dimensionless, normalization-explicit observables.
+- **N1 Scale invariance** — dimensionless, normalization-explicit observables (historically AS-1 "C4"; in the deployed domain contract C4 is informational density).
 - **C5 No retro-fitting** — kernel parameters fixed across domains; negative results reported as found.
 
 The kernel is never modified. Each domain implementation lives in its own repository (`Aptadynamic-<Domain>`) together with its Validation Study.

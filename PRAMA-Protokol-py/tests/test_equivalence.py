@@ -1,35 +1,44 @@
-"""Equivalence certification against the validated reference implementation.
+"""Kernel identity regression against committed golden vectors.
 
-The extracted universal kernel and the generalized causal expectation MUST
-reproduce, bit-identically, the outputs of `Aptadynamic-Electrical-Grid`
-(the BPA/NYISO-validated code) when fed the same inputs.
+HISTORY. Until 0.2.0 this file certified the package against the code it
+was extracted from (`Aptadynamic-Electrical-Grid`). That comparison is now
+CIRCULAR: the grid imports its kernel from this package
+(`from prama_protokol import project`), so the old test compared the
+package with a wrapper around itself and certified nothing. The historical
+extraction-time certification is preserved as a record in EQUIVALENCE.md;
+the live cross-implementation certification is Python↔Rust
+(EQUIVALENCE-RS.md).
 
-Run inside an environment where the reference package is importable as
-`aptadynamic_eg` (e.g. `pip install -e` both repositories):
+WHAT THIS FILE DOES NOW. It pins the kernel's exact numerical identity at
+0.2.1 with golden vectors: a committed fixture (tests/golden_gamma.npz)
+holds a synthetic input stream and every Γ output produced by the current
+certified kernel. Any future change to kernel arithmetic — however small —
+breaks bit-exact reproduction and MUST be accompanied by regenerating the
+fixture, a version bump, an ANOMALIES.md entry, and Rust recertification.
 
-    pytest tests/test_equivalence.py -v
+Regenerate (only as part of a certified kernel change):
 
-If the reference package is absent, these tests are skipped — the structural
-tests in test_kernel.py still run.
+    python tests/test_equivalence.py --regenerate
 """
 
 from __future__ import annotations
 
+import pathlib
+import sys
+
 import numpy as np
 import pandas as pd
-import pytest
 
 from prama_protokol import KernelConfig, project
 from prama_protokol.interface import causal_conditional_mean
 
-ref = pytest.importorskip(
-    "aptadynamic_eg", reason="reference implementation not installed"
-)
-from aptadynamic_eg import projection as ref_projection  # noqa: E402
-from aptadynamic_eg import omega as ref_omega  # noqa: E402
+FIXTURE = pathlib.Path(__file__).parent / "golden_gamma.npz"
+
+GAMMA_COLS = ["delta", "xi", "lambda", "theta", "M", "G"]
+DISCRETE_COLS = ["latent_collapse", "stratum", "valid"]
 
 
-def _synthetic_omega(n: int = 24 * 400, seed: int = 7) -> pd.DataFrame:
+def _synthetic_stream(n: int = 24 * 400, seed: int = 7):
     """A year+ of synthetic hourly observables with seasonal structure."""
     rng = np.random.default_rng(seed)
     t0 = 1_100_000_000
@@ -38,57 +47,57 @@ def _synthetic_omega(n: int = 24 * 400, seed: int = 7) -> pd.DataFrame:
     base = 1.5 + np.sin(2 * np.pi * hours.hour / 24) + 0.5 * np.sin(
         2 * np.pi * hours.month / 12
     )
-    intensity = rng.poisson(np.clip(base, 0.1, None)).astype(float)
-    return pd.DataFrame({"t": t, "intensity": intensity})
+    omega = rng.poisson(np.clip(base, 0.1, None)).astype(float)
+    ctx = (hours.month.to_numpy() * 100 + hours.hour.to_numpy())
+    expected = causal_conditional_mean(omega, ctx, 10, 24 * 30)
+    return omega, expected
 
 
-def test_kernel_projection_identical():
-    """π extracted == π validated, on every Γ column."""
-    om = _synthetic_omega()
-    ref_cfg = ref_projection.ProjectionConfig()
-    ref_out = ref_projection.project(om, ref_cfg)
+def _project_current():
+    omega, expected = _synthetic_stream()
+    cfgs = {
+        "grid": KernelConfig(),                                  # tau=336, g=24
+        "llm": KernelConfig(tau_memory=64, g_smooth=16),         # LLM-domain cfg
+    }
+    out = {"omega": omega, "expected": expected}
+    for name, cfg in cfgs.items():
+        gamma = project(omega, expected, cfg)
+        for col in GAMMA_COLS + DISCRETE_COLS:
+            values = gamma[col].to_numpy()
+            # NumPy's platform-native ``int`` is int32 on Windows and int64
+            # on Linux. Canonicalize only the serialized regime labels so the
+            # numerical golden-vector record is portable without changing the
+            # kernel's public output dtype or arithmetic.
+            if col == "stratum":
+                values = values.astype(np.int64, copy=False)
+            out[f"{name}__{col}"] = values
+    return out
 
-    expected = ref_omega.expected_profile(om)
-    new_cfg = KernelConfig(
-        tau_memory=ref_cfg.tau_memory,
-        lambda_eq=ref_cfg.lambda_eq,
-        lambda_recovery=ref_cfg.lambda_recovery,
-        lambda_min=ref_cfg.lambda_min,
-        theta_scale=ref_cfg.theta_scale,
-        g_smooth=ref_cfg.g_smooth,
-        kappa=ref_cfg.kappa,
+
+def test_golden_vectors_bit_exact():
+    assert FIXTURE.exists(), (
+        "golden fixture missing; regenerate ONLY as part of a certified "
+        "kernel change: python tests/test_equivalence.py --regenerate"
     )
-    new_out = project(om["intensity"].to_numpy(float), expected, new_cfg)
-
-    pairs = [
-        ("delta", "delta"), ("xi", "xi"), ("lambda", "lambda"),
-        ("theta", "theta"), ("M", "M"), ("G", "G"),
-    ]
-    for ref_col, new_col in pairs:
-        assert np.array_equal(
-            ref_out[ref_col].to_numpy(), new_out[new_col].to_numpy()
-        ), f"Γ.{new_col} differs from the validated reference"
-
-    assert np.array_equal(
-        ref_out["latent_collapse"].to_numpy(), new_out["latent_collapse"].to_numpy()
-    )
-    assert np.array_equal(
-        ref_out["stratum"].to_numpy(), new_out["stratum"].to_numpy()
-    )
+    golden = np.load(FIXTURE)
+    current = _project_current()
+    assert set(golden.files) == set(current.keys())
+    for key in golden.files:
+        a, b = golden[key], np.asarray(current[key])
+        assert a.dtype == b.dtype, f"{key}: dtype changed {a.dtype} -> {b.dtype}"
+        equal = (np.array_equal(a, b, equal_nan=True)
+                 if np.issubdtype(a.dtype, np.floating)
+                 else np.array_equal(a, b))
+        assert equal, (
+            f"{key}: kernel output diverged from certified 0.2.1 golden "
+            f"vectors — bit-exact reproduction is required"
+        )
 
 
-def test_causal_expectation_identical():
-    """CausalConditionalMean(month, hour) == the grid's seasonal profile."""
-    om = _synthetic_omega(seed=11)
-    ref_exp = ref_omega.expected_profile(om)
-
-    ts = pd.to_datetime(om["t"], unit="s", utc=True)
-    ctx = np.stack([ts.dt.month.to_numpy(), ts.dt.hour.to_numpy()], axis=1)
-    new_exp = causal_conditional_mean(
-        om["intensity"].to_numpy(float), ctx,
-        min_context_count=10, min_global_count=24 * 30,
-    )
-
-    assert np.array_equal(np.isnan(ref_exp), np.isnan(new_exp)), "warm-up pattern differs"
-    ok = ~np.isnan(ref_exp)
-    assert np.array_equal(ref_exp[ok], new_exp[ok]), "causal expectation differs"
+if __name__ == "__main__":
+    if "--regenerate" in sys.argv:
+        np.savez_compressed(FIXTURE, **_project_current())
+        print(f"golden vectors written: {FIXTURE}")
+    else:
+        test_golden_vectors_bit_exact()
+        print("golden vectors reproduced bit-exactly")

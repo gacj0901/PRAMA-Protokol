@@ -4,7 +4,7 @@ The ONLY domain-specific component of the protocol (AS-1 P7, §5).
 
 A domain joins the Protokol by producing two arrays:
 
-    omega    : the dimensionless, normalized observable stream ω(t)   (C1, C4)
+    omega    : the dimensionless, normalized observable stream ω(t)   (C1, N1)
     expected : its strictly causal expectation ω̂(t)                   (C2, C3)
 
 This module provides the contract as a base class and one universal,
@@ -37,7 +37,9 @@ class ObservationInterface(ABC):
       C2  Strict causality     — ω̂(t) depends on the strict past only.
       C3  Genuine decoupling   — ω̂ is the system's own expected behavior,
                                  never a constant or a copy of activity.
-      C4  Scale invariance     — ω is dimensionless; an explicit
+      N1  Scale invariance     — ω is dimensionless; an explicit
+          (historically AS-1 "C4"; renamed: in the deployed domain
+          contract C4 is informational density)
                                  normalization is part of this interface.
       C5  No retro-fitting     — nothing here is tuned on outcome labels.
 
@@ -46,7 +48,7 @@ class ObservationInterface(ABC):
 
     @abstractmethod
     def stream(self) -> np.ndarray:
-        """Return the normalized observable stream ω(t) (C1, C4)."""
+        """Return the normalized observable stream ω(t) (C1, N1)."""
 
     @abstractmethod
     def expectation(self) -> np.ndarray:

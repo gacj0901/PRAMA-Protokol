@@ -62,7 +62,7 @@ print("→ in the alert window, raw volume is statistically unremarkable.\n")
 # 2. Observation Interface O_D (the ONLY domain-specific part — AS-1 §5)
 # ----------------------------------------------------------------------
 def normalize(x: np.ndarray) -> np.ndarray:
-    """C4 — explicit, strictly causal normalization by the running mean."""
+    """N1 — explicit, strictly causal normalization by the running mean."""
     cm = np.cumsum(x) / (np.arange(len(x)) + 1)
     return x / np.maximum(cm, 1e-12)
 
@@ -77,8 +77,9 @@ omega_hat = expectation(omega)
 # 3. Compliance record BEFORE trusting any output (AS-1 §8)
 # ----------------------------------------------------------------------
 record = compliance.run_all(raw, normalize, expectation)
-for key in ("C2", "C3", "C4"):
-    status = "PASS" if record[key]["passed"] else "FAIL"
+for key in ("C2", "C3", "RHO_I", "C4", "MEM", "N1"):
+    p = record[key]["passed"]
+    status = "INFO" if p is None else ("PASS" if p else "FAIL")
     print(f"[{status}] {record[key]['check']}: {record[key]['detail']}")
 print()
 

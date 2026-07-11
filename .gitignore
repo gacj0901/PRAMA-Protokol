@@ -1,1 +1,13 @@
 PRAMA-Protokol-rs/BLUEPRINT_AGUA_MONTERREY.md
+
+# Python build and test artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Rust build artifacts
+target/
+
+# Windows metadata
+desktop.ini

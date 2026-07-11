@@ -1,59 +1,40 @@
-# Equivalence Certification
+# Equivalence Certification — Python package
 
-**Package:** `prama-protokol` v0.2.0
-**Reference:** `Aptadynamic-Electrical-Grid` (the BPA/NYISO-validated implementation)
-**Date:** 2026-07-04
+**Package:** `prama-protokol` v0.2.1
+**Live cross-implementation certification:** Python ↔ Rust, see
+`../PRAMA-Protokol-rs/EQUIVALENCE-RS.md`.
+**Kernel identity pin:** golden vectors, `tests/golden_gamma.npz`
+(regenerated 2026-07-11 over the 0.2.1 kernel; kernel arithmetic is
+identical to 0.2.0 — the 0.2.1 changes touch only the compliance module,
+tests and documentation).
 
-## Claim
+## Historical record — extraction-time certification (FROZEN)
 
-The Reference Kernel of this package (`prama_protokol.kernel.project`) and the
-generalized causal expectation (`prama_protokol.interface.causal_conditional_mean`)
-are **numerically identical** to the validated code they were extracted from.
-The extraction changed *packaging* — the kernel now receives bare arrays and
-contains zero domain references — but not one bit of *mathematics*.
+At extraction (certified run of 2026-07-04, package v0.2.0-pre), the
+Reference Kernel (`prama_protokol.kernel.project`) and the generalized
+causal expectation (`prama_protokol.interface.causal_conditional_mean`)
+were verified **numerically identical** — exact equality, not
+tolerance-based — to the implementation they were extracted from
+(`Aptadynamic-Electrical-Grid`, then containing its own kernel). Every Γ
+column (Δ, Ξ, λ, Θ, M, G), the latent-collapse flag and the stratum
+assignment matched under `numpy.array_equal`; warm-up NaN patterns of the
+seasonal expectation matched exactly.
 
-## Method
+That comparison is **no longer executable and no longer meaningful**: the
+grid repository has since inverted the dependency and imports its kernel
+from this package (`from prama_protokol import project`). A comparison of
+the package against a wrapper around itself would be circular and certify
+nothing. The old cross-repository test has therefore been replaced by a
+golden-vector regression (`tests/test_equivalence.py`) that pins the
+kernel's exact numerical identity; any future divergence — however small —
+fails bit-exact reproduction and requires a version bump, an ANOMALIES.md
+entry, fixture regeneration and Rust recertification.
 
-Automated tests in `tests/test_equivalence.py`, run with both packages installed:
+## Consequence (corrected)
 
-1. **Kernel projection** — a synthetic observable stream (2+ years of hourly
-   bins, seasonal Poisson structure) is projected by the reference
-   implementation's `projection.project` and by this package's kernel under
-   the same configuration. Every Γ column (Δ, Ξ, λ, Θ, M, G), the
-   latent-collapse flag, and the stratum assignment are compared with
-   `numpy.array_equal` — **exact equality, not tolerance-based**.
-
-2. **Causal expectation** — the reference's seasonal profile
-   (`omega.expected_profile`, hour × month running conditional mean) is
-   compared against `causal_conditional_mean` with context keys
-   (month, hour). Warm-up NaN patterns and all defined values must match
-   exactly.
-
-## Result
-
-Both tests **pass with exact equality** (verification run of 2026-07-04:
-14/14 tests passed, including the two equivalence tests).
-
-## Consequence
-
-Because the kernel is bit-identical, the empirical validation of the
-reference implementation transfers to this package: the BPA conditional
-severity discrimination (ratio 16.0) and the corrected NYISO result (1.90)
-were produced by *this* mathematics. From this version onward, the Separation
-Theorem (AS-1 P7) is enforced by engineering: every domain implementation
-depends on this package, so "same kernel across domains" is a checkable fact
-(same package, same version), not a claim.
-
-## Notes on the extraction
-
-- The reference `ProjectionConfig` declared a `lambda_erosion` parameter that
-  is **unused** in the validated code path (erosion is governed by `kappa`).
-  It was dropped from `KernelConfig`; no numerical effect.
-- The kernel's API changed from a domain DataFrame (column `intensity`) to
-  bare arrays `(omega, expected)`; the optional `sigma_op` argument defaults
-  to `omega > 0`, matching the reference's operational-state proxy.
-- The compliance module's degeneration statistic (C3) was refined relative to
-  the draft specification: for sparse event streams, the pass criterion is
-  relative to the canonical degenerate Δ (constant-like causal reference),
-  since |corr(Δ, ω)| is mechanically high when most information is the
-  activity spike itself. Dense streams keep the absolute criterion.
+No empirical validation is claimed to transfer through this document.
+Empirical results produced with 0.1.0 kernels (central-difference G) are
+non-revalidated (see `../ANOMALIES.md`). Evidence produced with the
+0.2.x causal kernel stands on its own runs in the domain repositories,
+under their own gates; this package certifies kernel identity, not
+domain conclusions.

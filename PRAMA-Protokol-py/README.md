@@ -70,7 +70,8 @@ src/prama_protokol/
 │                    categorical context; the reference grid profile is the
 │                    special case context = (month, hour)).
 └── compliance.py    Mechanical contract verification: C2 truncation test,
-                     C3 degeneration statistic, C4 rescaling test — the
+                     C3 anti-degeneration gate, ρ_I band, C4 informational
+                     density, MEM memory-ratio, N1 rescaling test — the
                      passing record, not analytical argument, establishes
                      conformance (AS-1 §8).
 tests/               14 tests: structural tests of P1–P7 by construction,
@@ -110,7 +111,7 @@ The NYISO episode is part of the public record by design: it demonstrates that t
 ### Roadmap
 
 1. ~~**Kernel extraction**~~ — **done** (v0.2.0): π is installable, strictly causal, and batch/streaming equivalent ([`EQUIVALENCE.md`](EQUIVALENCE.md)).
-2. ~~**Compliance Module**~~ — **done** (v0.1.0): executable C2/C3/C4 checks with self-tests that detect future-leaking expectations and degenerate Δ.
+2. ~~**Compliance Module**~~ — **done** (v0.1.0): executable C2/C3/N1 checks with self-tests (extended in 0.2.1 to ρ_I, C4 density, MEM) that detect future-leaking expectations and degenerate Δ.
 3. ~~**Observation Interface base**~~ — **done** (v0.1.0): the C1–C5 contract as an abstract base class plus a universal causal expectation builder.
 4. **Migrate the reference implementation** — make `Aptadynamic-Electrical-Grid` depend on this package, removing its embedded copy of the kernel.
 5. **Runtime Engine** — streaming/batch orchestration (ingest → omega → projection → regimes → alerts) as a reusable layer.
@@ -125,7 +126,7 @@ Writing a domain implementation means writing **one component**: an Observation 
 - **C1 Strict observability** — only externally observable events; no hidden state.
 - **C2 Strict causality** — expectations built from the strict past only.
 - **C3 Genuine decoupling** — Δ measures deviation from the system's own causally expected behavior, never raw activity.
-- **C4 Scale invariance** — dimensionless, normalization-explicit observables.
+- **N1 Scale invariance** — dimensionless, normalization-explicit observables (historically AS-1 "C4"; in the deployed domain contract C4 is informational density).
 - **C5 No retro-fitting** — kernel parameters fixed across domains; negative results reported as found.
 
 The kernel is never modified. Each domain implementation lives in its own repository (`Aptadynamic-<Domain>`) together with its Validation Study.
