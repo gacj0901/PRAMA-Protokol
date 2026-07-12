@@ -4,8 +4,9 @@
 **Reference:** `prama-protokol` (Python) v0.2.1 — kernel arithmetic
 identical to 0.2.0; the 0.2.1 changes touch only the compliance module,
 tests and documentation.
-**Certification run:** 2026-07-11, over the tree containing commit
-`c576fd4` (causal G) plus the 0.2.1 corrections. Rule in force: a
+**Certification run:** 2026-07-11, against certified Python commit
+`69a51de562910539a2b4c3755f167dd0789ad32d` (0.2.1, including causal G
+from `c576fd4`). Rule in force: a
 certification record is valid only if its run postdates every
 kernel-touching change it covers (see `../ANOMALIES.md`). Earlier record
 of 2026-07-05 is superseded.
