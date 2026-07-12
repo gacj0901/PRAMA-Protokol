@@ -23,7 +23,7 @@ It projects a domain's observable event stream onto six universal coordinates,
               strictly causal)         identical across domains)
 ```
 
-and evaluates the single viability condition **Ξ(t) ≤ Θ(λ(t))** — accumulated structural tension against an endogenous, history-contracted threshold. Its distinctive early signal is **latent collapse**: the system is operational, its margin is still positive, and its margin is being consumed (σ_op = 1 ∧ M ≥ 0 ∧ G < 0). The system looks fine — and is not.
+and evaluates the single viability condition **Ξ(t) ≤ Θ(λ(t))** — accumulated structural tension against an endogenous, history-contracted threshold. It exposes a state called **latent collapse**: the system is operational, its margin is still positive, and its margin is being consumed (σ_op = 1 ∧ M ≥ 0 ∧ G < 0). This is a structural classification, not a validated early-warning claim.
 
 The projection kernel π never models the phenomenon: no topology, no mechanism, no causal model of the domain enters it. Only the Observation Interface O_D is domain-specific. This separation is not rhetoric; it is an architectural constraint, mechanically auditable, with a defined empirical test (AS-1 §8).
 
@@ -54,23 +54,36 @@ The projection kernel π never models the phenomenon: no topology, no mechanism,
 
 ## Status
 
-**The Protokol is validated; the Engine is being extracted.**
+**Kernel v0.2.1 is extracted and equivalence-certified. Empirical incremental value is not validated.**
 
-The Reference Kernel currently lives inside the reference implementation, [`Aptadynamic-Electrical-Grid`](https://github.com/gacj0901/Aptadynamic-Electrical-Grid), where it produced the framework's first empirical validation:
+Arithmetic certification and empirical validation are different claims. Golden
+vectors and Python/Rust equivalence certify the kernel implementation; they do
+not establish that its projection outperforms simpler methods on real data.
 
-| Study | Result |
+| Study | Current status |
 |---|---|
-| **BPA** (1999–2017, 14,258 automatic outages) | Conditional severity P(size ≥ 4) = 0.091 inside latent-collapse periods vs 0.006 outside — **ratio 16.0** (permutation p < 0.001; null 95th pct 1.16). Best strictly causal Markovian baseline: 3.16. |
-| **NYISO** (2008–2021, 9,600 forced outages) | Initial negative result (**0.55**) traced to a degenerate Δ in the observation interface — a failure of O_D, not of the kernel. With genuine causal decoupling: **1.90**, above the permutation null (1.26). Same kernel, unchanged. |
+| **BPA G1** | `invalid_for_confirmatory_claim_C3_gate_failed`. The observation interface did not decouple sufficiently in evaluation, so the study establishes neither superiority nor defeat. |
+| **NYISO G1** | Honest null under its frozen historical rules; no confirmatory advantage established. |
+| **NYISO G2** | Valid preregistered confirmatory negative result. CH-L passed every gate, but the selected B-TRIV baseline outperformed the Protokol (`contrast = -0.049623`, one-sided `p = 1.0`); the frozen program-falsification rule was activated. |
 
-The NYISO episode is part of the public record by design: it demonstrates that the kernel/observation separation localizes failure exactly where the architecture says it should.
+G2 also retained a positive secondary contrast against B-AC1 (`+0.037987`,
+Holm `p = 0.007499`). It does not replace the single primary comparison or
+change the classification. See
+[`G2_RESULT_H5.md`](https://github.com/gacj0901/Aptadynamic-Electrical-Grid/blob/main/G2_RESULT_H5.md).
+
+Historical BPA ratio `16.0` and NYISO ratio `1.90` came from superseded,
+exploratory procedures. They remain provenance, not current validation claims.
 
 ### Roadmap
 
-1. **Kernel extraction** — move π out of the electrical-grid repository into this one, as an installable package with no domain reference; verify bit-identical reproduction of the BPA/NYISO results.
-2. **Compliance Module** — executable conformance checks (dependency audit, causality truncation test, degeneration statistic, rescaling test) per AS-1 §8.
-3. **Observation Interface base** — the contract (C1–C5) as a documented template for writing new domain interfaces.
-4. **Second domain** — the first fully disciplined multi-domain validation study under AS-1.
+1. ~~**Kernel extraction**~~ — complete; π is installable and domain-blind.
+2. ~~**Compliance Module**~~ — complete for C2, C3, ρ_I, C4, MEM and N1.
+3. ~~**Observation Interface base**~~ — complete.
+4. **Empirical program** — retain negative and invalid results without
+   re-tuning the universal kernel or rewriting frozen classifications.
+5. **New domains** — require independent observation contracts and
+   preregistration; equivalence certification alone is never evidence of
+   empirical value.
 
 Studies predating AS-1 are classified *exploratory*, per the specification's study discipline.
 

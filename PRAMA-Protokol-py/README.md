@@ -23,7 +23,7 @@ It projects a domain's observable event stream onto six universal coordinates,
               strictly causal)         identical across domains)
 ```
 
-and evaluates the single viability condition **Ξ(t) ≤ Θ(λ(t))** — accumulated structural tension against an endogenous, history-contracted threshold. Its distinctive early signal is **latent collapse**: the system is operational, its margin is still positive, and its margin is being consumed (σ_op = 1 ∧ M ≥ 0 ∧ G < 0). The system looks fine — and is not.
+and evaluates the single viability condition **Ξ(t) ≤ Θ(λ(t))** — accumulated structural tension against an endogenous, history-contracted threshold. It exposes a state called **latent collapse**: the system is operational, its margin is still positive, and its margin is being consumed (σ_op = 1 ∧ M ≥ 0 ∧ G < 0). This is a structural classification, not a validated early-warning claim.
 
 The projection kernel π never models the phenomenon: no topology, no mechanism, no causal model of the domain enters it. Only the Observation Interface O_D is domain-specific. This separation is not rhetoric; it is an architectural constraint, mechanically auditable, with a defined empirical test (AS-1 §8).
 
@@ -54,7 +54,7 @@ The projection kernel π never models the phenomenon: no topology, no mechanism,
 
 ## Status
 
-**The Protokol is validated; the Reference Kernel is extracted and equivalence-certified.**
+**Kernel v0.2.1 is extracted and equivalence-certified. Empirical incremental value is not validated.**
 
 This repository ships operational code:
 
@@ -74,20 +74,20 @@ src/prama_protokol/
                      density, MEM memory-ratio, N1 rescaling test — the
                      passing record, not analytical argument, establishes
                      conformance (AS-1 §8).
-tests/               14 tests: structural tests of P1–P7 by construction,
+tests/               21 tests: structural tests of P1–P7 by construction,
                      compliance self-tests (future-leak and degenerate-Δ
-                     detection), and EQUIVALENCE tests against the validated
-                     reference implementation.
+                     detection), golden-vector regression, and cross-language
+                     equivalence tests.
 examples/            synthetic_demo.py — a runnable end-to-end story:
                      a system whose failures silently begin to beget
                      failures; first latent-collapse alert 0.5 days after
                      onset, margin exhaustion 157 days later.
 ```
 
-**Equivalence certification.** The kernel is verified **bit-identical** to the
-code inside [`Aptadynamic-Electrical-Grid`](https://github.com/gacj0901/Aptadynamic-Electrical-Grid)
-that produced the empirical validation (see [`EQUIVALENCE.md`](EQUIVALENCE.md)).
-The BPA/NYISO results below were therefore produced by *this* mathematics:
+**Equivalence certification.** The kernel is verified **bit-identical** across
+the certified Python/Rust implementations (see
+[`EQUIVALENCE.md`](EQUIVALENCE.md)). Equivalence certifies arithmetic identity;
+it does not validate an empirical performance claim.
 
 Quick start:
 
@@ -99,23 +99,26 @@ python -m pytest tests/ -v        # 12 structural + compliance tests
 python examples/synthetic_demo.py
 ```
 
-The Reference Kernel was extracted from the reference implementation, [`Aptadynamic-Electrical-Grid`](https://github.com/gacj0901/Aptadynamic-Electrical-Grid), where it produced the framework's first empirical validation:
+Current electrical-domain evidence:
 
-| Study | Result |
+| Study | Current status |
 |---|---|
-| **BPA** (1999–2017, 14,258 automatic outages) | Conditional severity P(size ≥ 4) = 0.091 inside latent-collapse periods vs 0.006 outside — **ratio 16.0** (permutation p < 0.001; null 95th pct 1.16). Best strictly causal Markovian baseline: 3.16. |
-| **NYISO** (2008–2021, 9,600 forced outages) | Initial negative result (**0.55**) traced to a degenerate Δ in the observation interface — a failure of O_D, not of the kernel. With genuine causal decoupling: **1.90**, above the permutation null (1.26). Same kernel, unchanged. |
+| **BPA G1** | Invalid for confirmatory claim because C3 failed in evaluation. |
+| **NYISO G1** | Honest null under frozen historical rules. |
+| **NYISO G2** | Valid confirmatory negative result: CH-L passed its gates, but the selected B-TRIV comparator outperformed the Protokol (`contrast = -0.049623`, `p = 1.0`); frozen program-falsification rule activated. |
 
-The NYISO episode is part of the public record by design: it demonstrates that the kernel/observation separation localizes failure exactly where the architecture says it should.
+Historical ratios `16.0` (BPA) and `1.90` (NYISO) are superseded exploratory
+provenance, not current validation claims. Full record:
+[`G2_RESULT_H5.md`](https://github.com/gacj0901/Aptadynamic-Electrical-Grid/blob/main/G2_RESULT_H5.md).
 
 ### Roadmap
 
 1. ~~**Kernel extraction**~~ — **done** (v0.2.0): π is installable, strictly causal, and batch/streaming equivalent ([`EQUIVALENCE.md`](EQUIVALENCE.md)).
 2. ~~**Compliance Module**~~ — **done** (v0.1.0): executable C2/C3/N1 checks with self-tests (extended in 0.2.1 to ρ_I, C4 density, MEM) that detect future-leaking expectations and degenerate Δ.
 3. ~~**Observation Interface base**~~ — **done** (v0.1.0): the C1–C5 contract as an abstract base class plus a universal causal expectation builder.
-4. **Migrate the reference implementation** — make `Aptadynamic-Electrical-Grid` depend on this package, removing its embedded copy of the kernel.
+4. ~~**Migrate the reference implementation**~~ — complete; the grid package pins `prama-protokol==0.2.1`.
 5. **Runtime Engine** — streaming/batch orchestration (ingest → omega → projection → regimes → alerts) as a reusable layer.
-6. **Second domain** — the first fully disciplined multi-domain validation study under AS-1.
+6. **New domains** — require independent observation contracts and preregistration; kernel equivalence alone is not empirical validation.
 
 Studies predating AS-1 are classified *exploratory*, per the specification's study discipline.
 

@@ -1,7 +1,7 @@
 # prama-protokol-rs
 
 **PRAMA Protokol — Rust production core of the universal aptadynamic projection
-kernel. Equivalence-certified against the validated Python reference.**
+kernel. Equivalence-certified against the Python reference.**
 
 G.A.C.J. — ORCID: [0009-0009-5649-1359](https://orcid.org/0009-0009-5649-1359)
 Part of the **AptadynamiK** program.
@@ -17,7 +17,7 @@ This crate is the **production armor of the Engine**: the universal kernel π
 (Ω → Γ = (Δ, Ξ, λ, Θ, M, G), regime stratification, latent-collapse detection)
 compiled for always-on, low-latency, embeddable deployment. It is an
 operation-for-operation replica of the certified Python kernel — the same
-mathematics that produced the BPA/NYISO empirical validation — verified to
+arithmetic used by the BPA/NYISO studies — verified to
 machine precision (**max divergence 8.9×10⁻¹⁶; all discrete flags identical**;
 see [`EQUIVALENCE-RS.md`](EQUIVALENCE-RS.md)).
 
