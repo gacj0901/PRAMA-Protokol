@@ -2,27 +2,29 @@
 //!
 //! Universal aptadynamic projection:  Ω → Γ(t) = (Δ, Ξ, λ, Θ, M, G).
 //!
-//! This is an **operation-for-operation replica** of the certified Python
-//! kernel (`prama-protokol` v0.2.0), with unified causal batch/streaming G.
-//! code that produced the BPA/NYISO empirical validation. Every arithmetic
-//! step follows the same order as the reference so that results agree to
-//! near machine precision (see EQUIVALENCE-RS.md; the only tolerated
-//! divergence source is the platform `exp` in the kernel constant).
+//! This is an **operation-for-operation replica** of the local certified
+//! Python kernel (`prama-protokol` v0.2.1), with unified causal
+//! batch/streaming G. Every arithmetic step follows the same order as the
+//! reference so that results agree to near machine precision (see
+//! EQUIVALENCE-RS.md; the only tolerated divergence source is the platform
+//! `exp` in the kernel constant).
 //!
-//! Domain-blind by construction (AS-1 P7): inputs are two bare f64 slices
+//! Domain-blind by construction: inputs are two bare f64 slices
 //! (the observable stream ω and its strictly causal expectation ω̂, NaN on
 //! warm-up rows). No domain knowledge exists or may be added here.
 //!
 //! Streaming note: `Kernel::step` exposes the O(1) per-bin update for
 //! always-on production monitors; `project` is the batch form.
 
-/// Universal kernel parameters (fixed across domains — AS-1 C5).
-/// Defaults are the validated configuration, in bins.
+pub mod v3;
+
+/// Universal kernel parameters, expressed in emitted stream bins.
+/// Defaults are the repository's certified profile.
 #[derive(Clone, Copy, Debug)]
 pub struct KernelConfig {
     pub tau_memory: f64,      // bins: memory scale of Ξ
     pub lambda_eq: f64,       // permissivity equilibrium
-    pub lambda_recovery: f64, // bounded recovery rate r (P4)
+    pub lambda_recovery: f64, // bounded recovery rate
     pub lambda_min: f64,      // floor of permissivity
     pub theta_scale: f64,     // Θ(λ) = theta_scale · λ
     pub g_smooth: usize,      // bins: smoothing window for D⁺M
@@ -127,7 +129,7 @@ pub fn project(
     }
 }
 
-/// Regime stratification S₁–S₄ on the (M, G) plane (AS-1 §6).
+/// Regime stratification S₁–S₄ on the (M, G) plane (specification §4).
 #[inline]
 pub fn stratify_one(m: f64, g: f64) -> u8 {
     if m > 0.0 && g < 0.0 {

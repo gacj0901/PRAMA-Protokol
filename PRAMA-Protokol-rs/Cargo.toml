@@ -1,8 +1,8 @@
 [package]
 name = "prama-protokol-rs"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
-description = "PRAMA Protokol — Rust production core of the universal aptadynamic projection kernel (AS-1). Equivalence-certified against the validated Python reference."
+description = "Rust batch, streaming and CLI implementation of the universal PRAMA Protokol kernel"
 license = "AGPL-3.0-only"
 
 [[bin]]
@@ -15,3 +15,6 @@ path = "src/lib.rs"
 
 [profile.release]
 lto = true
+
+[dev-dependencies]
+serde_json = "=1.0.149"

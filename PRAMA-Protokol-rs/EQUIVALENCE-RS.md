@@ -1,42 +1,49 @@
-# Equivalence Certification — Rust core vs certified Python reference
+# Equivalence Certification — Rust core vs Python reference
 
-**Crate:** `prama-protokol-rs` v0.2.0
-**Reference:** `prama-protokol` (Python) v0.2.1 — kernel arithmetic
-identical to 0.2.0; the 0.2.1 changes touch only the compliance module,
-tests and documentation.
-**Certification run:** 2026-07-11, against certified Python commit
-`69a51de562910539a2b4c3755f167dd0789ad32d` (0.2.1, including causal G
-from `c576fd4`). Rule in force: a
-certification record is valid only if its run postdates every
-kernel-touching change it covers (see `../ANOMALIES.md`). Earlier record
-of 2026-07-05 is superseded.
+**Crate:** `prama-protokol-rs` v0.3.0
+
+**Reference:** the local Python v0.3.0 implementation
+
+**Normative contract:** [`../SPECIFICATION.md`](../SPECIFICATION.md)
+
+**Joint result:**
+[`../results/v0_3_0_numeric_recertification.json`](../results/v0_3_0_numeric_recertification.json)
 
 ## Method
-Randomized streams (gamma observables, noisy expectations, NaN warm-up fractions
-0–5%) projected by both implementations under multiple configurations, including
-the validated grid configuration (tau=336, g_smooth=24) and the LLM-domain
-configuration (tau=64, g_smooth=16). Comparison via the CLI (`prama-project`)
-with 17-significant-digit CSV round-trip. Re-runnable: `tests/equivalence_vs_python.py`.
 
-## Result — PASS
-| Trial | n | config | max |diff| over Γ | latent / stratum / valid |
-|---|---|---|---|---|
-| 0 | 10,000 | 336/24, 2% NaN | 8.9e-16 | identical |
-| 1 | 10,000 | 64/16 | 4.4e-16 | identical |
-| 2 | 50,000 | 336/24, 5% NaN | 8.9e-16 | identical |
+The certification runner loads the independent v1 and v2 vectors, projects
+each input through Python batch, Rust batch and Rust streaming, then compares
+all emitted fields. The suite also covers configuration validation, leading
+warm-up, fail-closed internal gaps, causal backward difference, capacity
+controls, debt accumulation, capacity clipping and periodic ring rebuilds.
 
-Maximum divergence is at machine epsilon (sources: platform `exp` in the kernel
-constant and decimal round-trip). All discrete outputs — latent-collapse flags,
-strata S₁–S₄, validity masks — are **exactly identical**. The empirical validation
-of the 0.2.0 reference therefore transfers to this core. Empirical conclusions
-from 0.1.0 do not transfer and require revalidation (see `../ANOMALIES.md`).
+Continuous fields are compared under the declared absolute, relative and ULP
+limits. Boolean flags and temporal indices are exact. Batch and streaming are
+bit-identical within each language.
 
-## Performance (same container, single thread)
-- Pure kernel: **20.2 M bins/s** (10M bins in 0.495 s) — ~90× the Python reference.
-- Streaming `Kernel::step`: O(1) per bin; all coordinates and discrete outputs
-  match batch. `G` is the same causal one-step backward difference in all modes.
+## Long-run audit
 
-## Causal alignment
-Python batch, Rust batch and `StepOut.g` use the same trailing/right-aligned
-mean and one-step backward difference. Length and temporal alignment are
-identical, with `G[0] = 0`.
+An adversarial stream of at least 66,000 emitted rows verifies:
+
+- ring sum against a fresh logical oldest-to-newest reconstruction;
+- smoothed margin and causal `G`;
+- capacity step and cumulative ledger identities;
+- a distinguishable accumulated-debt coupling;
+- detection of an omitted-coupling mutation;
+- detection of disabled periodic ring rebuilds.
+
+## Re-run
+
+From the repository root:
+
+```bash
+python scripts/certify_v0_3_0.py
+```
+
+The command runs the Python suite, all Rust targets, cross-language vectors,
+long numerical audit and mutations, then writes the joint result artifact.
+
+## Claim boundary
+
+PASS certifies implementation equivalence and numerical custody only. It does
+not imply an empirical conclusion for any use of the kernel.

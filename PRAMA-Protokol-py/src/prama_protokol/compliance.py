@@ -4,12 +4,10 @@ Mechanical verification of the Observation Interface contract.
 Analytical argument without a passing record does not establish conformance;
 these checks ARE the record.
 
-Identifier namespaces
----------------------
-The record keys follow the DEPLOYED domain-contract numbering
-(`O_D Observation Contract` C1–C7), which is the numbering carried by
-domain evidence. Where AS-1's interface numbering differs, the historical
-AS-1 identifier is noted in the check's detail, never used as a record key.
+Identifier namespace
+--------------------
+The record keys follow the stable identifiers defined by the repository-local
+universal contract (`SPECIFICATION.md` §6).
 
     check_causality        — C2 : truncation invariance of ω̂
     check_degeneration     — C3 : Δ must not collapse into normalized
@@ -20,7 +18,7 @@ AS-1 identifier is noted in the check's detail, never used as a record key.
                                   marginal/seasonal-preserving null (§8.3)
     check_memory_ratio     — MEM: τ_K ≪ L_cal condition (§8.4)
     check_scale_invariance — N1 : rescaling test of the normalization
-                                  contract 𝔑_D (historically AS-1 "C4")
+                                  contract 𝔑_D
     run_all                — full record as a dict, ready to commit
 
 Gate thresholds (s_min, ρ_I band, f_star, min_memory_ratio) are declared
@@ -92,8 +90,8 @@ def check_degeneration(
 ) -> dict:
     """C3 — Anti-degeneration gate.
 
-    Degeneration (the NYISO failure mode) means Δ has collapsed into
-    normalized activity: the form Δ_deg = |ω − c|/(c + 1) with a constant
+    Degeneration means Δ has collapsed into normalized activity: the form
+    Δ_deg = |ω − c|/(c + 1) with a constant
     (or slowly drifting) reference c. Two-branch criterion; passing EITHER
     branch passes the gate:
 
@@ -293,7 +291,7 @@ def check_memory_ratio(
 
     When the memory scale is comparable with the record length, the
     accumulator describes the observation window rather than a
-    representative property of the system (Corpus). The minimum admissible
+    representative property of the system. The minimum admissible
     ratio L_cal/τ_K is declared in the domain contract; without it the
     check is informational.
     """
@@ -316,10 +314,6 @@ def check_scale_invariance(
     atol: float = 1e-9,
 ) -> dict:
     """N1 — Rescaling test of the normalization contract 𝔑_D.
-
-    (Historically labeled "C4" in AS-1's interface numbering; the record
-    key is N1 to avoid colliding with the deployed domain contract, where
-    C4 is informational density.)
 
     `pipeline_fn` maps RAW measurements ω̃ through the interface's
     normalization and the kernel to the Γ trajectory. Rescaling ω̃ by any

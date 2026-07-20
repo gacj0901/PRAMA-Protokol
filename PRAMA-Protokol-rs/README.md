@@ -1,94 +1,88 @@
-# prama-protokol-rs
+# PRAMA Protokol — Rust core
 
-**PRAMA Protokol — Rust production core of the universal aptadynamic projection
-kernel. Equivalence-certified against the Python reference.**
+The Rust crate is the batch, streaming and CLI implementation of the universal
+kernel defined in [`../SPECIFICATION.md`](../SPECIFICATION.md). It is certified
+against the Python reference included in this same repository.
 
-G.A.C.J. — ORCID: [0009-0009-5649-1359](https://orcid.org/0009-0009-5649-1359)
-Part of the **AptadynamiK** program.
-Normative specification: [AS-1](https://github.com/gacj0901/aptadynamic-cybernetics) ·
-Python reference: [`prama-protokol`](https://github.com/gacj0901/prama-protokol)
+## Crate boundary
 
-> **Denomination.** The protocol is always referred to as **PRAMA Protokol** in full;
-> the admissible short form is *the Protokol*.
+The crate receives normalized `omega`, strictly causal `expected` values, an
+optional non-negative capacity input and an optional operational-state flag.
+It contains no data adapter, topology, outcome definition or domain policy.
+Consumer software depends on this crate; the crate never depends on a
+consumer.
 
-## What this is — and what it is not
+## Execution modes
 
-This crate is the **production armor of the Engine**: the universal kernel π
-(Ω → Γ = (Δ, Ξ, λ, Θ, M, G), regime stratification, latent-collapse detection)
-compiled for always-on, low-latency, embeddable deployment. It is an
-operation-for-operation replica of the certified Python kernel — the same
-arithmetic used by the BPA/NYISO studies — verified to
-machine precision (**max divergence 8.9×10⁻¹⁶; all discrete flags identical**;
-see [`EQUIVALENCE-RS.md`](EQUIVALENCE-RS.md)).
+- `v3::project_v3`: current batch projection;
+- `v3::KernelV3::step`: current streaming state machine;
+- `project`, `Kernel::step` and `prama-project`: compatibility API.
 
-It is deliberately **not** a twin of any domain repository. Per AS-1 P7, domains
-are thin observation interfaces; the consolidated, hardened thing is the kernel.
-`Aptadynamic-Electrical-Grid` serves future domains (water/drainage networks,
-AI production, markets) as the *template* for designing an observation
-interface — never as code to fork.
+The current batch and streaming paths implement the same causal alignment and
+periodic logical-order ring rebuild:
 
-## Two execution modes
+```text
+G(1) = 0
+G(n) = smooth_M(n) − smooth_M(n−1)
+```
 
-**Batch** (`project`) — the certified equivalent of the reference; for studies
-and replays.
+where `smooth_M` is trailing and right-aligned, with a growing prefix during
+warm-up.
 
-**Streaming** (`Kernel::step`) — O(1) per bin, constant memory; for production
-monitors. All outputs match batch to near machine epsilon (unit-tested). Both
-paths use a trailing/right-aligned mean followed by `G[0] = 0` and
-`G[t] = smooth_M[t] - smooth_M[t-1]`.
+## Streaming example
 
 ```rust
-use prama_protokol::{Kernel, KernelConfig};
+use prama_protokol::v3::{KernelConfigV3, KernelV3};
 
-let mut k = Kernel::new(KernelConfig::default());
+let mut kernel = KernelV3::new(KernelConfigV3::default()).unwrap();
 loop {
-    let (omega, expected) = next_bin(); // from the domain's observation interface
-    let out = k.step(omega, expected, None);
-    if out.latent_collapse { alert(out); } // operating while consuming margin
+    let (omega, expected, u_lambda, sigma_op) = next_bin();
+    if let Some(out) = kernel.step(omega, expected, u_lambda, sigma_op).unwrap() {
+        consume(out);
+    }
 }
 ```
 
-## Performance
+The caller owns `next_bin` and `consume`; neither is part of the universal
+kernel.
 
-Single thread, this container: **20.2 M bins/s** pure kernel (10M bins in
-0.495 s) — ~90× the Python reference. At one bin per hour per monitored asset,
-one core sustains ~72 billion asset-hours per second of wall time: throughput
-will never be the constraint; observation quality will.
+## Compatibility CLI
 
-## CLI
-
-`prama-project` reads `omega,expected` CSV on stdin (expected may be `nan` on
-warm-up rows), writes the Γ trajectory on stdout. Used by the re-runnable
-cross-language certification (`tests/equivalence_vs_python.py`) and usable for
-batch pipelines without Python.
+`prama-project` preserves the previous `omega,expected` command-line surface.
+The normative v0.3.0 interface is the `v3` library module.
 
 ```bash
 cargo build --release
 ./target/release/prama-project --tau 336 --gsmooth 24 < stream.csv > gamma.csv
-./target/release/prama-project --bench 10000000   # internal benchmark
+./target/release/prama-project --bench 10000000
 ```
+
+## Verification
+
+```bash
+cargo test
+cargo test --all-targets
+python ../scripts/certify_v0_3_0.py
+```
+
+The cross-language harness invokes only the Python and Rust implementations
+contained in this repository. [`EQUIVALENCE-RS.md`](EQUIVALENCE-RS.md) records
+the certified tolerances and discrete-output identity.
+
+Equivalence is an implementation property. It is not evidence of predictive
+or operational value in any consuming domain.
 
 ## Scope discipline
 
-- The kernel is domain-blind: no topology, no mechanism, no domain knowledge
-  may be added here (AS-1 P7, §4).
-- Kernel parameters are fixed across domains given a declared bin scale
-  (AS-1 C5; bin-scale declaration per the pending v1.1 clause).
-- This core implements the **certified exponential-memory accumulator**. The
-  genuine long-memory question (power-law kernels, motivated by the Hurst ≈ 0.63
-  signature in BPA data) is a *theory-level* extension of AS-1 P2 — pre-registered
-  and validated before any implementation lands here. This crate reserves the
-  extension point; it does not preempt the theory.
-
-## Roadmap
-
-1. ~~Core + streaming + CLI + cross-language certification~~ — **done** (v0.2.0).
-2. Python bindings (PyO3/maturin) so studies iterate in Python on the compiled core.
-3. First production domain deployment (candidate: water & drainage networks —
-   see the domain blueprint in the program's planning documents).
-4. Long-memory extension point, gated on AS-1 P2 amendment.
+- kernel equations and temporal alignment are fixed by the local
+  specification;
+- configuration is explicit and expressed in emitted stream bins;
+- no raw-data normalization or empirical threshold is embedded here;
+- arithmetic changes require a version change, anomaly entry, golden-vector
+  regeneration and cross-language recertification;
+- consumer-specific code, examples, conclusions and roadmaps do not belong in
+  this crate.
 
 ## License
 
-AGPL-3.0. Commercial licensing, industrial collaborations and academic research
-partnerships may be available separately.
+AGPL-3.0-only.

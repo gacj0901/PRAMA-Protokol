@@ -1,7 +1,7 @@
 [project]
 name = "prama-protokol"
-version = "0.2.1"
-description = "PRAMA Protokol — universal aptadynamic projection kernel: structural viability evaluation from observable behavior alone (AS-1)"
+version = "0.3.0"
+description = "Universal domain-blind kernel for structural viability projection from observable behavior"
 requires-python = ">=3.10"
 dependencies = ["pandas>=2.0", "numpy>=1.24"]
 license = "AGPL-3.0-only"

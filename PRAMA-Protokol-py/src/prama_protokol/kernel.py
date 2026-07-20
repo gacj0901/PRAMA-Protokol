@@ -2,27 +2,25 @@
 
 Universal aptadynamic projection:  Ω → Γ(t) = (Δ, Ξ, λ, Θ, M, G).
 
-    Δ(t)  = |ω(t) − ω̂(t)| / (ω̂(t) + 1)      structural decoupling (AS-1 P5)
+    Δ(t)  = |ω(t) − ω̂(t)| / (ω̂(t) + 1)      structural decoupling
     Ξ(t)  = ∫ K(t−τ) Δ(τ) dτ                 non-Markovian tension accumulator,
-                                              exponential causal kernel (P2)
+                                              exponential causal kernel
     λ(t)  = historical permissivity: eroded by excess (Ξ−Θ)⁺, bounded
-            recovery that NEVER modifies Ξ (P3, P4 — non-restitution)
-    Θ(λ)  = endogenous threshold, strictly increasing in λ (P3)
+            recovery that NEVER modifies Ξ
+    Θ(λ)  = endogenous threshold, strictly increasing in λ
     M(t)  = Θ(λ) − Ξ                          viability margin
     G(t)  = D⁺M (smoothed)                    margin generation power
 
-Latent collapse (P6):  σ_op(t) = 1  ∧  M(t) ≥ 0  ∧  G(t) < 0.
+Latent collapse:  σ_op(t) = 1  ∧  M(t) ≥ 0  ∧  G(t) < 0.
 
 Regime stratification S₁–S₄ on the (M, G) plane.
 
-This module is the universal component of the protocol (AS-1 P7): it contains
-no domain knowledge whatsoever. It never sees raw measurements; it receives
-the observable stream ω and its strictly causal expectation ω̂, both produced
-by an Observation Interface (see `prama_protokol.interface`).
-
-Extracted from the reference implementation `Aptadynamic-Electrical-Grid`
-(BPA/NYISO validation). Numerical equivalence with the reference is certified
-by `tests/test_equivalence.py` and documented in EQUIVALENCE.md.
+This module is the universal component of the protocol: it contains no domain
+knowledge whatsoever. It never sees raw measurements; it receives the
+observable stream ω and its strictly causal expectation ω̂, both produced by
+an Observation Interface (see `prama_protokol.interface`). Its identity is
+pinned by local golden vectors and cross-certified against the Rust
+implementation contained in this repository.
 """
 
 from __future__ import annotations
@@ -37,15 +35,15 @@ __all__ = ["KernelConfig", "project", "stratify"]
 
 @dataclass
 class KernelConfig:
-    """Universal kernel parameters (fixed across domains — AS-1 C5).
+    """Universal kernel parameters, expressed in emitted stream bins.
 
-    Time is measured in stream bins; defaults assume hourly bins, matching
-    the validated reference configuration.
+    A consumer declares its bin scale and freezes the complete configuration
+    before evaluation outcomes. The recurrence itself is domain-invariant.
     """
 
-    tau_memory: float = 24 * 14   # bins: memory scale of Ξ (~2 weeks at 1h bins)
+    tau_memory: float = 24 * 14   # bins: memory scale of Ξ
     lambda_eq: float = 1.0        # permissivity equilibrium
-    lambda_recovery: float = 0.005  # bounded recovery rate r (P4)
+    lambda_recovery: float = 0.005  # bounded recovery rate
     lambda_min: float = 0.1      # floor of permissivity
     theta_scale: float = 2.0     # Θ(λ) = theta_scale · λ (strictly increasing)
     g_smooth: int = 24           # bins: smoothing window for D⁺M
@@ -101,15 +99,15 @@ def project(
     theta[0] = cfg.theta_scale * cfg.lambda_eq
 
     for i in range(1, n):
-        # P2 — non-Markovian accumulator (exponential causal kernel)
+        # Non-Markovian accumulator (exponential causal kernel).
         xi[i] = a * xi[i - 1] + (1 - a) * delta[i]
-        # P3 — erosion by excess over the endogenous threshold
+        # Erosion by excess over the endogenous threshold.
         excess = max(xi[i] - theta[i - 1], 0.0)
         excess_acc[i] = excess_acc[i - 1] + excess
-        # P4 — bounded recovery; note: nothing here ever modifies xi
+        # Bounded recovery; nothing here ever modifies xi.
         d_lam = -cfg.kappa * excess + cfg.lambda_recovery * (cfg.lambda_eq - lam[i - 1])
         lam[i] = np.clip(lam[i - 1] + d_lam, cfg.lambda_min, cfg.lambda_eq)
-        # P3 — threshold strictly increasing in permissivity
+        # Threshold strictly increasing in permissivity.
         theta[i] = cfg.theta_scale * lam[i]
 
     m = theta - xi
@@ -133,7 +131,7 @@ def project(
             "G": g,
         }
     )
-    # P6 — latent collapse: operational ∧ margin ≥ 0 ∧ margin generation < 0
+    # Latent collapse: operational ∧ margin ≥ 0 ∧ margin generation < 0.
     out["latent_collapse"] = sigma_op & (m >= 0) & (g < 0) & valid
     out["stratum"] = np.where(valid, stratify(m, g), 1)
     out["valid"] = valid
@@ -141,7 +139,7 @@ def project(
 
 
 def stratify(m: np.ndarray, g: np.ndarray) -> np.ndarray:
-    """Regime stratification S₁–S₄ on the (M, G) plane (AS-1 §6).
+    """Regime stratification S₁–S₄ on the (M, G) plane (specification §4).
 
     S₁ viable   : M > 0, G ≥ 0   — margin held or growing
     S₂ tension  : M > 0, G < 0   — margin positive but being consumed

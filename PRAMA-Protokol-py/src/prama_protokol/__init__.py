@@ -2,14 +2,22 @@
 
 Structural viability evaluation from observable behavior alone.
 
-    from prama_protokol import project, KernelConfig
-    gamma = project(omega, expected)          # Ω → Γ = (Δ, Ξ, λ, Θ, M, G)
+    from prama_protokol import project_v3, KernelConfigV3
+    gamma = project_v3(omega, expected)       # Ω → Γ_v3
 
-Normative specification: Aptadynamic Cybernetics Specification (AS-1).
-Formal reference: Logical–Mathematical Corpus, DOI 10.5281/zenodo.20369325.
+Normative software contract: repository-local ``SPECIFICATION.md``.
 """
 
 from .kernel import KernelConfig, project, stratify
+from .kernel_v3 import (
+    GammaRowV3,
+    GammaV3,
+    KernelConfigV3,
+    KernelV3,
+    NumericAuditV3,
+    V3ProjectionError,
+    project_v3,
+)
 from .interface import (
     ObservationInterface,
     CausalConditionalMean,
@@ -17,12 +25,19 @@ from .interface import (
 )
 from . import compliance
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 __all__ = [
     "KernelConfig",
     "project",
     "stratify",
+    "GammaRowV3",
+    "GammaV3",
+    "KernelConfigV3",
+    "KernelV3",
+    "NumericAuditV3",
+    "V3ProjectionError",
+    "project_v3",
     "ObservationInterface",
     "CausalConditionalMean",
     "causal_conditional_mean",

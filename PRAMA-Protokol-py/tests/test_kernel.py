@@ -1,4 +1,4 @@
-"""Structural tests: the kernel embodies the AS-1 principles by construction.
+"""Structural tests for the repository-local universal kernel contract.
 
 These tests require no reference implementation and no real data. Each test
 name states the principle it verifies.
@@ -148,8 +148,7 @@ def test_compliance_detects_future_leak():
 
 
 def test_compliance_detects_degenerate_delta():
-    """Δ built on a constant reference degenerates into activity (the NYISO
-    failure mode) and MUST fail C3."""
+    """Δ built on a constant reference degenerates into activity and fails C3."""
     rng = np.random.default_rng(13)
     omega = rng.gamma(2.0, 1.0, 4000)
     constant_ref = np.full(len(omega), 1.0)          # ω̂ = c  (violates C3)

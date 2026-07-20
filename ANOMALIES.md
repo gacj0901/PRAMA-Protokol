@@ -19,14 +19,34 @@ The commit that made `G` causal (`c576fd4`, 2026-07-11) modified
 run dates of 2026-07-04 (`EQUIVALENCE.md`) and 2026-07-05
 (`EQUIVALENCE-RS.md`) — certification runs dated BEFORE the kernel
 change, over a test suite that the same commit extended. Additionally,
-the Python↔reference equivalence test had become circular: the grid
-repository now imports its kernel from this package, so the test
-compared the package against a wrapper around itself.
+an extraction-era comparison had become circular after dependency direction
+was corrected: the comparator was a downstream wrapper around this package.
 
-0.2.1 corrects the record: the extraction-time certification is frozen
-as history in `EQUIVALENCE.md`; kernel identity is pinned by golden
-vectors (`tests/golden_gamma.npz`, bit-exact regression); the live
-cross-implementation certification is Python↔Rust and was re-run over
-the 0.2.1 tree (see `EQUIVALENCE-RS.md` for the run record). Rule made
-explicit: a certification record is valid only if its run postdates
-every kernel-touching change it covers.
+0.2.1 corrects the record: kernel identity is pinned by golden vectors
+(`tests/golden_gamma.npz`, bit-exact regression); the live
+cross-implementation certification is Python↔Rust, wholly contained in this
+repository, and was re-run over the 0.2.1 tree (see `EQUIVALENCE-RS.md`). Rule
+made explicit: a certification record is valid only if its run postdates every
+kernel-touching change it covers. Downstream software is never an identity
+anchor for the universal kernel.
+
+## Indefinite incremental ring drift (bounded in 0.3.0)
+
+The compatibility streaming kernel maintained its trailing-margin sum only by
+subtracting the outgoing value and adding the incoming value. Floating-point
+cancellation error could therefore accumulate with total process age rather
+than with the fixed window size. Finite equivalence trials did not establish a
+bounded error contract for indefinite streaming.
+
+Version 0.3.0 introduces a separate state machine with deterministic periodic
+ring rebuilds. After inserting each multiple of the smoothing-window length,
+the ring sum is reconstructed in logical order from oldest to newest. Python
+batch, Python streaming, Rust batch and Rust streaming share the same calendar
+and addition order.
+
+The release also exposes independent ring and capacity ledgers. Its
+certification includes a long adversarial stream and two blocking mutations:
+disabled ring rebuilds and omitted accumulated-debt coupling. Both must be
+detected before the release can pass. The compatibility API and its frozen
+vectors remain available; its numerical behavior is not rewritten
+retroactively.

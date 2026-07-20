@@ -1,6 +1,6 @@
 """PRAMA Protokol — Observation Interface (O_D).
 
-The ONLY domain-specific component of the protocol (AS-1 P7, §5).
+The only consumer-specific component of the protocol (specification §6).
 
 A domain joins the Protokol by producing two arrays:
 
@@ -11,12 +11,8 @@ This module provides the contract as a base class and one universal,
 domain-free expectation builder:
 
     CausalConditionalMean — the strictly causal conditional mean of the
-    stream given a categorical context (e.g. hour-of-day × month, day-of-week,
-    shift, season...), with fallback to the causal global mean during warm-up.
-
-The reference implementation's grid interface (hour × month seasonal profile
-over outage intensity) is exactly `CausalConditionalMean` with context keys
-(month, hour); equivalence is certified in tests/test_equivalence.py.
+    stream given any categorical context, with fallback to the causal global
+    mean during warm-up.
 """
 
 from __future__ import annotations
@@ -24,22 +20,18 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 import numpy as np
-import pandas as pd
-
 __all__ = ["ObservationInterface", "CausalConditionalMean", "causal_conditional_mean"]
 
 
 class ObservationInterface(ABC):
-    """Contract for a domain's observation interface (AS-1 §5).
+    """Contract for a consumer's observation interface (specification §6).
 
     Implementations MUST satisfy:
       C1  Strict observability — only externally observable events.
       C2  Strict causality     — ω̂(t) depends on the strict past only.
       C3  Genuine decoupling   — ω̂ is the system's own expected behavior,
                                  never a constant or a copy of activity.
-      N1  Scale invariance     — ω is dimensionless; an explicit
-          (historically AS-1 "C4"; renamed: in the deployed domain
-          contract C4 is informational density)
+      N1  Scale invariance     — ω is dimensionless and an explicit
                                  normalization is part of this interface.
       C5  No retro-fitting     — nothing here is tuned on outcome labels.
 
@@ -109,11 +101,10 @@ def causal_conditional_mean(
 class CausalConditionalMean:
     """Reusable causal expectation over a categorical context.
 
-    Example (the reference grid profile — hour × month):
+    Example with two arbitrary categorical coordinates:
 
-        t = pd.to_datetime(df["t"], unit="s", utc=True)
-        ctx = np.stack([t.dt.month.to_numpy(), t.dt.hour.to_numpy()], axis=1)
-        omega_hat = CausalConditionalMean(min_context_count=10)(intensity, ctx)
+        ctx = np.stack([category_a, category_b], axis=1)
+        omega_hat = CausalConditionalMean(min_context_count=10)(omega, ctx)
     """
 
     def __init__(self, min_context_count: int = 10, min_global_count: int = 720):

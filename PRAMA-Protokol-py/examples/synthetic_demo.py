@@ -15,13 +15,15 @@ onset, daily volume (~2.6/day vs 1.84 before) is statistically unremarkable.
 A volume monitor sees a normal system for months.
 
 The Protokol reads the structure instead: decoupling Δ accumulates into Ξ,
-historical permissivity λ erodes — and, by non-reincarnation (AS-1 P4),
-what is consumed does not come back — the endogenous threshold Θ contracts,
-the margin M is consumed while operation continues (latent collapse, P6),
+historical permissivity λ erodes while recovery never rewrites Ξ, the
+endogenous threshold Θ contracts, the margin M is consumed while operation
+continues (the latent-collapse flag),
 and finally the regime degrades S₁ → S₂ → S₃/S₄.
 
 Everything below the interface section is universal: the kernel receives two
 bare arrays and knows nothing about "hours", "events", or this story.
+This constructed trajectory demonstrates API semantics; it is not empirical
+validation or an operational early-warning claim.
 """
 
 from __future__ import annotations
@@ -59,7 +61,7 @@ print(f"events/day, 1st month after  : {raw[onset:onset+24*30].mean()*24:5.2f}")
 print("→ in the alert window, raw volume is statistically unremarkable.\n")
 
 # ----------------------------------------------------------------------
-# 2. Observation Interface O_D (the ONLY domain-specific part — AS-1 §5)
+# 2. Observation Interface O_D (consumer-owned; specification §6)
 # ----------------------------------------------------------------------
 def normalize(x: np.ndarray) -> np.ndarray:
     """N1 — explicit, strictly causal normalization by the running mean."""
@@ -74,7 +76,7 @@ omega = normalize(raw)
 omega_hat = expectation(omega)
 
 # ----------------------------------------------------------------------
-# 3. Compliance record BEFORE trusting any output (AS-1 §8)
+# 3. Compliance record before interpreting any output
 # ----------------------------------------------------------------------
 record = compliance.run_all(raw, normalize, expectation)
 for key in ("C2", "C3", "RHO_I", "C4", "MEM", "N1"):
@@ -84,7 +86,7 @@ for key in ("C2", "C3", "RHO_I", "C4", "MEM", "N1"):
 print()
 
 # ----------------------------------------------------------------------
-# 4. Universal projection π : Ω → Γ   (domain-blind from here on — P7)
+# 4. Universal projection π : Ω → Γ (domain-blind from here on)
 # ----------------------------------------------------------------------
 gamma = project(omega, omega_hat, KernelConfig())
 
@@ -110,14 +112,14 @@ s34 = idx[(idx >= onset) & (gamma["stratum"].to_numpy() >= 3)]
 
 print()
 if len(lc):
-    print(f"First latent-collapse alert : day {(lc[0]-onset)/24:6.1f} after the silent onset")
+    print(f"First latent-collapse flag  : day {(lc[0]-onset)/24:6.1f} after the silent onset")
 if len(s34):
     print(f"Margin exhaustion (S₃/S₄)   : day {(s34[0]-onset)/24:6.1f} after the silent onset")
 if len(lc) and len(s34):
     print(
-        f"\nEarly warning: {(s34[0]-lc[0])/24:.0f} days between the first structural alert "
+        f"\nSynthetic separation: {(s34[0]-lc[0])/24:.0f} days between the first flag "
         "and margin exhaustion —"
     )
     print("months in which the system still LOOKED normal, and was not.")
-    print("Note: λ ends at its floor. By non-reincarnation (P4), the tolerance")
+    print("Note: λ ends at its floor. Under the bounded-recovery recurrence, tolerance")
     print("consumed on the way down is not recovered by quiet periods alone.")
