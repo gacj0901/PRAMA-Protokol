@@ -1,6 +1,6 @@
-"""PRAMA Protokol — Normative v3 Compliance Module.
+"""PRAMA Protokol — Legacy 0.2.x Compliance Module.
 
-Mechanical verification bound to KernelV3/project_v3.
+Compatibility-only verification for the frozen pre-v3 projection API.
 Analytical argument without a passing record does not establish conformance;
 these checks ARE the record.
 
@@ -33,16 +33,11 @@ from __future__ import annotations
 from typing import Callable
 
 import numpy as np
+import pandas as pd
 
-from .kernel_v3 import GammaV3, KernelConfigV3, project_v3
-
-KERNEL_API = "KernelV3/project_v3"
-COMPLIANCE_SCHEMA = "prama.compliance.v3"
-
+from .kernel import KernelConfig, project
 
 __all__ = [
-    "KERNEL_API",
-    "COMPLIANCE_SCHEMA",
     "check_causality",
     "check_degeneration",
     "check_inductive_ratio",
@@ -189,35 +184,20 @@ def check_inductive_ratio(
             "rho_I": rho, "band": (lo, hi)}
 
 
-def _require_v3_config(cfg: object) -> KernelConfigV3:
-    if not isinstance(cfg, KernelConfigV3):
-        raise TypeError("normative compliance requires KernelConfigV3")
-    return cfg
-
-
-def _xi_recurrence(delta_tilde: np.ndarray, cfg: KernelConfigV3) -> np.ndarray:
-    """Bit-exact replica of the normative v3 Xi recurrence."""
-
-    retention = cfg.r
-    state = 0.0
-    xi = np.empty(len(delta_tilde), dtype=np.float64)
-    for position, item in enumerate(delta_tilde):
-        value = float(item)
-        state = retention * state + (1.0 - retention) * value
-        xi[position] = state
+def _ema(delta: np.ndarray, tau_memory: float) -> np.ndarray:
+    """Bit-exact replica of the kernel's Ξ recurrence (kernel.py):
+    xi[0] = 0;  xi[i] = a·xi[i−1] + (1−a)·delta[i],  a = exp(−1/τ)."""
+    a = np.exp(-1.0 / tau_memory)
+    n = len(delta)
+    xi = np.zeros(n)
+    for i in range(1, n):
+        xi[i] = a * xi[i - 1] + (1 - a) * delta[i]
     return xi
 
 
-def _gamma_column(gamma: GammaV3, name: str) -> np.ndarray:
-    if not isinstance(gamma, GammaV3):
-        raise TypeError("normative compliance requires a GammaV3 trajectory")
-    attribute = "lambda_" if name == "lambda" else name
-    return np.asarray(getattr(gamma, attribute))
-
-
 def check_density(
-    gamma: GammaV3,
-    cfg: KernelConfigV3,
+    gamma: pd.DataFrame,
+    cfg: KernelConfig,
     context: np.ndarray | None = None,
     n_null: int = 200,
     seed: int = 0,
@@ -225,7 +205,7 @@ def check_density(
 ) -> dict:
     """C4 — Informational density of Ξ (deployment doc §8.3).
 
-    C4_D = Var(Ξ) / E[Var(Ξ_null)], where the null permutes delta_tilde while
+    C4_D = Var(Ξ) / E[Var(Ξ_null)], where the null permutes Δ while
     preserving its marginal distribution — and, when a `context` array of
     stratum labels is supplied (e.g. month×hour ids), permuting WITHIN
     strata so the seasonal composition is preserved too. What the null
@@ -241,21 +221,20 @@ def check_density(
     requires a dependence-destroying, marginal-preserving permutation.
 
     Before trusting any null, the internal EMA replica is verified to
-    reproduce Γ.Ξ from Gamma.delta_tilde EXACTLY; on mismatch the check fails as
+    reproduce Γ.Ξ from Γ.Δ EXACTLY; on mismatch the check fails as
     internally inconsistent rather than reporting a ratio.
 
     `f_star`, `n_null`, `seed` and the stratification are declared in the
     domain pre-registration. Without `f_star` the check is informational.
     """
-    cfg = _require_v3_config(cfg)
-    delta_tilde = _gamma_column(gamma, "delta_tilde").astype(float, copy=False)
-    xi = _gamma_column(gamma, "xi").astype(float, copy=False)
-    n = len(delta_tilde)
+    delta = gamma["delta"].to_numpy(dtype=float)
+    xi = gamma["xi"].to_numpy(dtype=float)
+    n = len(delta)
     if n < 8:
         return {"check": "C4 informational density", "passed": False,
                 "detail": "stream too short for a density null"}
 
-    xi_replica = _xi_recurrence(delta_tilde, cfg)
+    xi_replica = _ema(delta, cfg.tau_memory)
     if not np.array_equal(xi_replica, xi):
         return {"check": "C4 informational density", "passed": False,
                 "detail": "internal EMA replica does not reproduce Γ.Ξ "
@@ -273,13 +252,13 @@ def check_density(
 
     null_vars = np.empty(n_null)
     for k in range(n_null):
-        d = delta_tilde.copy()
+        d = delta.copy()
         if context is None:
             rng.shuffle(d)
         else:
             for idx in groups:
                 d[idx] = d[rng.permutation(idx)]
-        null_vars[k] = np.var(_xi_recurrence(d, cfg))
+        null_vars[k] = np.var(_ema(d, cfg.tau_memory))
 
     mean_null = float(null_vars.mean())
     if mean_null == 0.0:
@@ -304,7 +283,7 @@ def check_density(
 
 
 def check_memory_ratio(
-    cfg: KernelConfigV3,
+    cfg: KernelConfig,
     n_cal: int,
     min_ratio: float | None = None,
 ) -> dict:
@@ -316,9 +295,7 @@ def check_memory_ratio(
     ratio L_cal/τ_K is declared in the domain contract; without it the
     check is informational.
     """
-    cfg = _require_v3_config(cfg)
-    memory_bins = float(cfg.tau) / float(cfg.h)
-    ratio = float(n_cal) / memory_bins
+    ratio = float(n_cal) / float(cfg.tau_memory)
     if min_ratio is None:
         return {"check": "MEM memory ratio", "passed": None,
                 "detail": f"L_cal/tau_K = {ratio:.1f} "
@@ -331,7 +308,7 @@ def check_memory_ratio(
 
 
 def check_scale_invariance(
-    pipeline_fn: Callable[[np.ndarray], GammaV3],
+    pipeline_fn: Callable[[np.ndarray], pd.DataFrame],
     raw: np.ndarray,
     factors: tuple = (1e-3, 1e-1, 10.0, 1e3),
     atol: float = 1e-9,
@@ -348,8 +325,8 @@ def check_scale_invariance(
     for c in factors:
         alt = pipeline_fn(raw * c)
         for col in cols:
-            a = _gamma_column(ref, col)
-            b = _gamma_column(alt, col)
+            a = ref[col].to_numpy()
+            b = alt[col].to_numpy()
             if not np.allclose(a, b, atol=atol, equal_nan=True):
                 d = float(np.nanmax(np.abs(a - b)))
                 return {"check": "N1 scale invariance", "passed": False,
@@ -362,7 +339,7 @@ def run_all(
     raw: np.ndarray,
     normalize_fn: Callable[[np.ndarray], np.ndarray],
     expectation_fn: Callable[[np.ndarray], np.ndarray],
-    cfg: KernelConfigV3 | None = None,
+    cfg: KernelConfig | None = None,
     r_star: float = 0.5,
     s_min: float = 0.01,
     rho_band: tuple | None = None,
@@ -393,37 +370,24 @@ def run_all(
     gate was left undeclared.
     """
     if cfg is None:
-        cfg = KernelConfigV3()
-    cfg = _require_v3_config(cfg)
+        cfg = KernelConfig()
 
-    def pipeline(x: np.ndarray) -> GammaV3:
+    def pipeline(x: np.ndarray) -> pd.DataFrame:
         om = normalize_fn(x)
-        return project_v3(om, expectation_fn(om), cfg)
+        return project(om, expectation_fn(om), cfg)
 
     omega = normalize_fn(np.asarray(raw, dtype=float))
     expected = expectation_fn(omega)
-    gamma = project_v3(omega, expected, cfg)
-    emitted = gamma.input_index
-    emitted_omega = omega[emitted]
-    if context is None:
-        emitted_context = None
-    else:
-        context_array = np.asarray(context)
-        if context_array.ndim != 1 or context_array.size != omega.size:
-            raise ValueError("context must align with the raw input stream")
-        emitted_context = context_array[emitted]
+    gamma = project(omega, expected, cfg)
     if n_cal is None:
         n_cal = len(omega)
 
     record = {
-        "schema_version": COMPLIANCE_SCHEMA,
-        "kernel_api": KERNEL_API,
         "C2": check_causality(expectation_fn, omega),
-        "C3": check_degeneration(
-            gamma.delta, emitted_omega, r_star=r_star, s_min=s_min
-        ),
+        "C3": check_degeneration(gamma["delta"].to_numpy(), omega,
+                                 r_star=r_star, s_min=s_min),
         "RHO_I": check_inductive_ratio(omega, expected, band=rho_band),
-        "C4": check_density(gamma, cfg, context=emitted_context, n_null=n_null,
+        "C4": check_density(gamma, cfg, context=context, n_null=n_null,
                             seed=null_seed, f_star=f_star),
         "MEM": check_memory_ratio(cfg, n_cal, min_ratio=min_memory_ratio),
         "N1": check_scale_invariance(pipeline, raw),

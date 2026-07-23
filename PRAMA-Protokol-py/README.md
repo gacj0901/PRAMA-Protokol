@@ -24,8 +24,9 @@ non-conformant.
 src/prama_protokol/
 ├── kernel_v3.py    current batch/streaming state machine and numeric ledger
 ├── kernel.py       compatibility projection preserved by frozen vectors
-├── interface.py    Observation Interface base and causal expectation builder
-└── compliance.py   mechanical interface and memory-support diagnostics
+├── interface.py          Observation Interface base and causal expectation builder
+├── compliance.py         normative KernelV3 mechanical diagnostics
+└── compliance_legacy.py  explicit compatibility diagnostics for kernel.py
 
 tests/
 ├── test_kernel_v3.py    current recurrence, fail-closed and mutation tests
@@ -87,7 +88,8 @@ closed without mutating the streaming state.
 
 ## Compliance
 
-`prama_protokol.compliance` provides mechanical checks for:
+`prama_protokol.compliance` is bound exclusively to `KernelV3/project_v3` and
+emits `schema_version = prama.compliance.v3`. It provides mechanical checks for:
 
 - C2 truncation causality;
 - C3 anti-degeneration;
@@ -95,6 +97,9 @@ closed without mutating the streaming state.
 - C4 informational density;
 - memory support;
 - N1 scale invariance.
+
+The frozen pre-v3 checks remain available only through the explicitly named
+`prama_protokol.compliance_legacy` module and do not certify `GammaV3`.
 
 Thresholds omitted by the consumer are reported as informational. They do not
 become implicit passes. Observable provenance, non-circular outcomes and

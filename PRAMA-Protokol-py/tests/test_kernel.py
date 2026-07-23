@@ -11,7 +11,7 @@ import pandas as pd
 
 from prama_protokol import KernelConfig, project, stratify
 from prama_protokol.interface import causal_conditional_mean
-from prama_protokol import compliance
+from prama_protokol import compliance_legacy as compliance
 
 
 def _stream(n=5000, seed=3):

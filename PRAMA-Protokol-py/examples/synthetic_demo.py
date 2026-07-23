@@ -22,7 +22,7 @@ and finally the regime degrades S₁ → S₂ → S₃/S₄.
 
 Everything below the interface section is universal: the kernel receives two
 bare arrays and knows nothing about "hours", "events", or this story.
-This constructed trajectory demonstrates API semantics; it is not empirical
+This legacy compatibility trajectory demonstrates pre-v3 API semantics; it is not empirical
 validation or an operational early-warning claim.
 """
 
@@ -32,7 +32,7 @@ import numpy as np
 
 from prama_protokol import KernelConfig, project
 from prama_protokol.interface import causal_conditional_mean
-from prama_protokol import compliance
+from prama_protokol import compliance_legacy as compliance
 
 # ----------------------------------------------------------------------
 # 1. A synthetic domain (this part plays the role of the real world)

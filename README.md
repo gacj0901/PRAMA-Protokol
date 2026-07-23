@@ -50,7 +50,7 @@ It is a measurement transform, not a phenomenon model.
 This monorepository contains two implementations of the same contract:
 
 ```text
-PRAMA-Protokol-py/   Python executable reference, interface base and compliance
+PRAMA-Protokol-py/   Python executable reference, v3 compliance and explicit legacy surface
 PRAMA-Protokol-rs/   Rust batch/streaming core and CLI
 ```
 

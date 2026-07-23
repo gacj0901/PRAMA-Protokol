@@ -174,8 +174,11 @@ The implementation owns the mapping from raw measurements to `omega`,
 - an identified observation epoch;
 - non-circular outcomes for empirical claims.
 
-The compliance module tests the mechanical obligations it can observe. Checks
-without thresholds are informational, never implicit passes.
+The normative `prama_protokol.compliance` module is bound to
+`KernelConfigV3`, `project_v3` and `GammaV3`; every record identifies that API
+and the `prama.compliance.v3` schema. The separately named
+`compliance_legacy` module covers only the frozen compatibility projection.
+Checks without thresholds are informational, never implicit passes.
 
 ## 9. Certification and change control
 

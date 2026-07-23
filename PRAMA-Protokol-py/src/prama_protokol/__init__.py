@@ -23,7 +23,7 @@ from .interface import (
     CausalConditionalMean,
     causal_conditional_mean,
 )
-from . import compliance
+from . import compliance, compliance_legacy
 
 __version__ = "0.3.0"
 
@@ -42,4 +42,5 @@ __all__ = [
     "CausalConditionalMean",
     "causal_conditional_mean",
     "compliance",
+    "compliance_legacy",
 ]

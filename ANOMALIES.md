@@ -50,3 +50,16 @@ disabled ring rebuilds and omitted accumulated-debt coupling. Both must be
 detected before the release can pass. The compatibility API and its frozen
 vectors remain available; its numerical behavior is not rewritten
 retroactively.
+## Normative compliance surface bound to the compatibility kernel (corrected after 0.3.0)
+
+The public Python module named `prama_protokol.compliance` remained imported
+from the package root after v3 became normative, but its default configuration,
+projection, memory parameter and internal Xi replica still belonged to the
+frozen pre-v3 compatibility kernel. A passing record from that module therefore
+did not mechanically certify `KernelV3/project_v3`.
+
+The post-0.3.0 tree binds `compliance` exclusively to `KernelConfigV3`,
+`project_v3` and `GammaV3`, emits the `prama.compliance.v3` schema and
+rejects compatibility configurations. The former implementation remains
+available only as `compliance_legacy`. No kernel recurrence or certified
+golden vector changed; this is a correction of the public verification surface.
